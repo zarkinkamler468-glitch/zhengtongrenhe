@@ -1,8 +1,6 @@
 # Python
 __pycache__/
 *.pyc
-*.pyo
-*.egg-info/
 .venv/
 dist/
 
@@ -15,23 +13,18 @@ out/
 # 环境变量与密钥
 .env
 .env.local
+.env.production
 !.env.example
 !backend/.env.example
 !frontend/.env.example
 
-# 运行时数据（数据库、附件、日志）
-data/
+# 运行时数据
 backend/data/
-backend/scripts/output/*
-!backend/scripts/output/.gitkeep
+backend/scripts/
 *.log
 
-# 系统文件
+# 系统 / IDE
 .DS_Store
 Thumbs.db
-desktop.ini
-
-# IDE
 .idea/
 .vscode/
-*.swp
