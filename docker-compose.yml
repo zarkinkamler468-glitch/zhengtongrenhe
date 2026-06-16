@@ -15,7 +15,7 @@ x-backend-env: &backend-env
 
 services:
   mysql:
-    image: mysql:8.0
+    image: registry.cn-hangzhou.aliyuncs.com/library/mysql:8.0
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
@@ -40,7 +40,7 @@ services:
           memory: 512M
 
   redis:
-    image: redis:7-alpine
+    image: registry.cn-hangzhou.aliyuncs.com/library/redis:7-alpine
     restart: unless-stopped
     command: redis-server --maxmemory 64mb --maxmemory-policy allkeys-lru
     healthcheck:

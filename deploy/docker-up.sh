@@ -14,6 +14,10 @@ if grep -q "请改成" .env 2>/dev/null; then
   exit 1
 fi
 
+export BUILDX_NO_DEFAULT_ATTESTATIONS=1
+export COMPOSE_DOCKER_CLI_BUILD=1
+export DOCKER_BUILDKIT=1
+
 docker compose up -d --build
 
 echo ""

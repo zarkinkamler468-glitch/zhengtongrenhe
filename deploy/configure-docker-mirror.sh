@@ -1,11 +1,11 @@
 #!/bin/bash
-# 国内服务器配置 Docker Hub 镜像加速（解决 pull / build 超时、not found）
+# 国内服务器配置 Docker 镜像加速（腾讯云优先）
 set -e
 
 MIRRORS='[
+  "https://mirror.ccs.tencentyun.com",
   "https://docker.1ms.run",
-  "https://docker.xuanyuan.me",
-  "https://hub.rat.dev"
+  "https://docker.xuanyuan.me"
 ]'
 
 DAEMON=/etc/docker/daemon.json
@@ -22,6 +22,7 @@ fi
 cat > "$DAEMON" <<EOF
 {
   "registry-mirrors": ${MIRRORS},
+  "max-concurrent-downloads": 3,
   "log-driver": "json-file",
   "log-opts": {
     "max-size": "10m",
@@ -37,4 +38,4 @@ echo ""
 echo "Docker 镜像加速已配置，当前 mirrors:"
 docker info 2>/dev/null | grep -A5 "Registry Mirrors" || true
 echo ""
-echo "测试拉取: docker pull python:3.11-slim"
+echo "下一步: bash deploy/pull-base-images.sh"

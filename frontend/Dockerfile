@@ -1,4 +1,4 @@
-FROM node:20-bookworm-slim AS builder
+FROM registry.cn-hangzhou.aliyuncs.com/library/node:20-bookworm-slim AS builder
 
 WORKDIR /app
 
@@ -13,7 +13,7 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
 RUN npm run build
 
-FROM node:20-alpine AS runner
+FROM registry.cn-hangzhou.aliyuncs.com/library/node:20-alpine AS runner
 
 WORKDIR /app
 

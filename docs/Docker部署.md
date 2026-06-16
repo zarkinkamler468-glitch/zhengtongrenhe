@@ -36,18 +36,20 @@ vi .env
 
 ## 四、配置 Docker 镜像加速（国内必做）
 
-若 build 报错 `python:3.11-slim: not found` 或拉镜像极慢，先执行：
+若 build 报错 `python:3.11-slim: not found` 或 `in-toto+json ... not found`，先执行：
 
 ```bash
 bash deploy/configure-docker-mirror.sh
 bash deploy/pull-base-images.sh
 ```
 
-或在宝塔 **Docker** → **镜像加速** 里填入：
+项目已改用 **阿里云 library 镜像**（`registry.cn-hangzhou.aliyuncs.com/library/...`），不依赖 Docker Hub 直连。
+
+或在宝塔 **Docker** → **镜像加速** 里填入（腾讯云服务器优先）：
 
 ```
+https://mirror.ccs.tencentyun.com
 https://docker.1ms.run
-https://docker.xuanyuan.me
 ```
 
 保存后重启 Docker。
