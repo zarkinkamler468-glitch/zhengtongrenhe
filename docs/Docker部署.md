@@ -34,7 +34,25 @@ vi .env
 | `PUBLIC_URL` | 对外访问地址，如 `https://edu.example.com` |
 | `LLM_API_KEY` | DeepSeek 密钥（可选） |
 
-## 四、一键启动
+## 四、配置 Docker 镜像加速（国内必做）
+
+若 build 报错 `python:3.11-slim: not found` 或拉镜像极慢，先执行：
+
+```bash
+bash deploy/configure-docker-mirror.sh
+bash deploy/pull-base-images.sh
+```
+
+或在宝塔 **Docker** → **镜像加速** 里填入：
+
+```
+https://docker.1ms.run
+https://docker.xuanyuan.me
+```
+
+保存后重启 Docker。
+
+## 五、一键启动
 
 ```bash
 bash deploy/docker-up.sh
@@ -55,7 +73,7 @@ curl http://127.0.0.1:8000/health
 curl -I http://127.0.0.1:3000
 ```
 
-## 五、宝塔 Nginx 反代
+## 六、宝塔 Nginx 反代
 
 **网站** → 添加站点（你的域名）→ 配置文件加入：
 
@@ -88,13 +106,13 @@ location / {
 > `PUBLIC_URL` 必须与最终 HTTPS 域名一致。修改后需重建前端：
 > `docker compose up -d --build web`
 
-## 六、验收
+## 七、验收
 
 1. 浏览器打开 `https://你的域名`
 2. 登录 `admin` / `admin123`，**立即改密码**
 3. **监测** → **立即采集**，有数据即成功
 
-## 七、常用命令
+## 八、常用命令
 
 ```bash
 cd /www/wwwroot/zhengtongrenhemain
