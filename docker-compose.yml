@@ -15,7 +15,7 @@ x-backend-env: &backend-env
 
 services:
   mysql:
-    image: registry.cn-hangzhou.aliyuncs.com/library/mysql:8.0
+    image: ${DOCKER_REGISTRY:-docker.1panel.live/library}/mysql:8.0
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
@@ -40,7 +40,7 @@ services:
           memory: 512M
 
   redis:
-    image: registry.cn-hangzhou.aliyuncs.com/library/redis:7-alpine
+    image: ${DOCKER_REGISTRY:-docker.1panel.live/library}/redis:7-alpine
     restart: unless-stopped
     command: redis-server --maxmemory 64mb --maxmemory-policy allkeys-lru
     healthcheck:
@@ -57,6 +57,8 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      args:
+        DOCKER_REGISTRY: ${DOCKER_REGISTRY:-docker.1panel.live/library}
     restart: unless-stopped
     environment:
       <<: *backend-env
@@ -78,6 +80,8 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      args:
+        DOCKER_REGISTRY: ${DOCKER_REGISTRY:-docker.1panel.live/library}
     restart: unless-stopped
     command: celery -A app.tasks.celery_app worker --loglevel=info --concurrency=1
     environment:
@@ -100,6 +104,8 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      args:
+        DOCKER_REGISTRY: ${DOCKER_REGISTRY:-docker.1panel.live/library}
     restart: unless-stopped
     command: celery -A app.tasks.celery_app beat --loglevel=info
     environment:
@@ -119,6 +125,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
+        DOCKER_REGISTRY: ${DOCKER_REGISTRY:-docker.1panel.live/library}
         NEXT_PUBLIC_API_URL: ${PUBLIC_URL}
     restart: unless-stopped
     ports:

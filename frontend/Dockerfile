@@ -1,8 +1,9 @@
-FROM registry.cn-hangzhou.aliyuncs.com/library/node:20-bookworm-slim AS builder
+ARG DOCKER_REGISTRY=docker.1panel.live/library
+
+FROM ${DOCKER_REGISTRY}/node:20-bookworm-slim AS builder
 
 WORKDIR /app
 
-# Next.js 构建需要 devDependencies（tailwind、typescript 等）
 COPY package.json package-lock.json ./
 RUN npm ci --registry=https://registry.npmmirror.com --include=dev
 
@@ -13,7 +14,7 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
 RUN npm run build
 
-FROM registry.cn-hangzhou.aliyuncs.com/library/node:20-alpine AS runner
+FROM ${DOCKER_REGISTRY}/node:20-alpine AS runner
 
 WORKDIR /app
 

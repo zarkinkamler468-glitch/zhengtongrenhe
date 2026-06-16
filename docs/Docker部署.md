@@ -43,16 +43,25 @@ bash deploy/configure-docker-mirror.sh
 bash deploy/pull-base-images.sh
 ```
 
-项目已改用 **阿里云 library 镜像**（`registry.cn-hangzhou.aliyuncs.com/library/...`），不依赖 Docker Hub 直连。
+项目会依次尝试 **1Panel / DaoCloud / 1ms** 等国内代理，自动选用可用的写入 `.env`：
 
-或在宝塔 **Docker** → **镜像加速** 里填入（腾讯云服务器优先）：
-
-```
-https://mirror.ccs.tencentyun.com
-https://docker.1ms.run
+```bash
+bash deploy/pull-base-images.sh
+bash deploy/docker-up.sh
 ```
 
-保存后重启 Docker。
+若仍失败，在 `.env` 手动指定（任选一个能 pull 的）：
+
+```env
+DOCKER_REGISTRY=docker.1panel.live/library
+# 或 DOCKER_REGISTRY=docker.m.daocloud.io/library
+```
+
+测试单条：
+
+```bash
+docker pull docker.1panel.live/library/python:3.11-slim
+```
 
 ## 五、一键启动
 

@@ -1,4 +1,5 @@
-FROM registry.cn-hangzhou.aliyuncs.com/library/python:3.11-slim
+ARG DOCKER_REGISTRY=docker.1panel.live/library
+FROM ${DOCKER_REGISTRY}/python:3.11-slim
 
 WORKDIR /app
 
