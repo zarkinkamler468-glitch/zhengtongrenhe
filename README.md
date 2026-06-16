@@ -2,18 +2,28 @@
 
 政务教育官网监测、采集、AI 解读与多租户管理。
 
-## 文档
+## 部署
 
-**完整部署步骤（宝塔，不用 Docker）** → [docs/部署文档.md](docs/部署文档.md)
+**推荐：Docker 一键部署** → [docs/Docker部署.md](docs/Docker部署.md)
+
+宝塔原生部署（不用 Docker）→ [docs/部署文档.md](docs/部署文档.md)
+
+## 快速启动（Docker）
+
+```bash
+cp .env.docker.example .env   # 编辑密码与域名
+bash deploy/docker-up.sh
+```
 
 ## 目录
 
 ```
 zhengtongrenhe/
-├── backend/          # FastAPI 后端 + Celery
-├── frontend/         # Next.js 前端
-├── deploy/           # Supervisor 配置模板
-└── docs/部署文档.md  # 部署与使用说明
+├── backend/           # FastAPI 后端
+├── frontend/          # Next.js 前端
+├── docker-compose.yml # Docker 编排
+├── deploy/            # 部署脚本
+└── docs/              # 文档
 ```
 
 ## 默认账号

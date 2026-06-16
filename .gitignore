@@ -15,6 +15,7 @@ out/
 .env.local
 .env.production
 !.env.example
+!.env.docker.example
 !backend/.env.example
 !frontend/.env.example
 
