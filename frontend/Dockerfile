@@ -1,9 +1,10 @@
-FROM node:20-alpine AS builder
+FROM node:20-bookworm-slim AS builder
 
 WORKDIR /app
 
+# Next.js 构建需要 devDependencies（tailwind、typescript 等）
 COPY package.json package-lock.json ./
-RUN npm ci --registry=https://registry.npmmirror.com
+RUN npm ci --registry=https://registry.npmmirror.com --include=dev
 
 COPY . .
 
