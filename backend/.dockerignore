@@ -3,5 +3,7 @@ __pycache__
 *.pyc
 data
 .env
-scripts
+scripts/*
+!scripts/backfill_empty_content.py
+!scripts/probe_sources.py
 *.log
