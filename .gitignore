@@ -29,3 +29,7 @@ backend/scripts/
 Thumbs.db
 .idea/
 .vscode/
+
+# Electron 桌面客户端
+desktop/node_modules/
+desktop/release/

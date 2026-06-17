@@ -1,4 +1,14 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+/** 线上同域部署时自动用当前站点 origin，避免构建时写死 localhost 导致 404 */
+export function getApiBase(): string {
+  const env = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/$/, "");
+  if (typeof window !== "undefined") {
+    if (!env || /localhost|127\.0\.0\.1/.test(env)) {
+      return window.location.origin;
+    }
+    return env;
+  }
+  return env || "http://localhost:8000";
+}
 
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -23,7 +33,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     headers["Content-Type"] = headers["Content-Type"] || "application/json";
   }
 
-  const res = await fetch(`${API_URL}${path}`, { ...options, headers });
+  const res = await fetch(`${getApiBase()}${path}`, { ...options, headers });
   if (res.status === 401) {
     clearToken();
     if (typeof window !== "undefined") window.location.href = "/login";
@@ -55,7 +65,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
 export const api = {
   getAuthConfig: async () => {
-    const res = await fetch(`${API_URL}/api/v1/auth/config`);
+    const res = await fetch(`${getApiBase()}/api/v1/auth/config`);
     if (!res.ok) throw new Error("无法加载系统配置");
     return res.json() as Promise<{
       multi_user_enabled: boolean;
@@ -66,7 +76,7 @@ export const api = {
 
   login: async (username: string, password: string) => {
     const body = new URLSearchParams({ username, password });
-    const res = await fetch(`${API_URL}/api/v1/auth/login`, {
+    const res = await fetch(`${getApiBase()}/api/v1/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body,

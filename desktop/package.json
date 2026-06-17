@@ -1,0 +1,48 @@
+{
+  "name": "edu-policy-desktop",
+  "version": "1.0.0",
+  "description": "教育政策监测平台桌面客户端（连接线上服务器）",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "build:win": "electron-builder --win nsis",
+    "build:portable": "electron-builder --win portable"
+  },
+  "author": "zhengtongrenhe",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "electron": "^34.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "online.liujianqiang.ce.edu-policy",
+    "productName": "教育政策监测平台",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.js",
+      "config.js",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "教育政策监测平台"
+    },
+    "portable": {
+      "artifactName": "教育政策监测平台-便携版.exe"
+    }
+  }
+}
