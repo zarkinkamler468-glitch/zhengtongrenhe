@@ -72,3 +72,13 @@ class ArticleSearchResult(BaseModel):
     total: int
     items: list[ArticleListItem]
     query: str
+
+
+class BatchArticleActionBody(BaseModel):
+    article_ids: list[int] | None = None
+    source_name: str | None = None
+    policy_level: PolicyLevel | None = None
+    project_category: ProjectCategory | None = None
+    policy_type: str | None = None
+    q: str | None = None
+    limit: int = 200

@@ -179,6 +179,51 @@ export const api = {
       article_id?: number;
     }>(`/api/v1/articles/${id}/analyze?force=${force}`, { method: "POST" }),
 
+  batchFixDeadlines: (data?: {
+    article_ids?: number[];
+    source_name?: string;
+    policy_level?: string;
+    project_category?: string;
+    policy_type?: string;
+    q?: string;
+    limit?: number;
+  }) =>
+    request<{
+      status: string;
+      total: number;
+      updated: number;
+      unchanged: number;
+      skipped: number;
+      samples?: Array<{ article_id: number; old_deadline?: string; new_deadline?: string }>;
+    }>("/api/v1/articles/batch/fix-deadlines", {
+      method: "POST",
+      body: JSON.stringify(data ?? {}),
+    }),
+
+  batchAnalyzeArticles: (
+    data?: {
+      article_ids?: number[];
+      source_name?: string;
+      policy_level?: string;
+      project_category?: string;
+      policy_type?: string;
+      q?: string;
+      limit?: number;
+    },
+    force = true
+  ) =>
+    request<{
+      status: string;
+      count: number;
+      success?: number;
+      force?: boolean;
+      article_ids?: number[];
+      remaining?: number;
+    }>(`/api/v1/articles/batch/analyze?force=${force}`, {
+      method: "POST",
+      body: JSON.stringify(data ?? {}),
+    }),
+
   getArticle: (id: number) => request<ArticleDetail>(`/api/v1/articles/${id}`),
 
   searchArticles: (q: string, skip = 0, limit = 20) =>

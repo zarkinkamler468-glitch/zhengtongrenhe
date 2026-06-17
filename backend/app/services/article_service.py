@@ -161,3 +161,72 @@ async def list_source_names(db: AsyncSession, user: User) -> list[str]:
     q = scope_owner(q, Article, user)
     result = await db.execute(q)
     return [row[0] for row in result.all() if row[0]]
+
+
+def _article_filter_query(
+    user: User,
+    *,
+    policy_level: PolicyLevel | None = None,
+    project_category: ProjectCategory | None = None,
+    source_name: str | None = None,
+    has_analysis: bool | None = None,
+    policy_type: str | None = None,
+    q: str | None = None,
+    article_ids: list[int] | None = None,
+):
+    base = select(Article.id)
+    base = scope_owner(base, Article, user)
+
+    if article_ids:
+        base = base.where(Article.id.in_(article_ids))
+    if policy_level:
+        base = base.where(Article.policy_level == policy_level)
+    if project_category:
+        base = base.where(Article.project_category == project_category)
+    if source_name:
+        base = base.where(Article.source_name == source_name)
+    if has_analysis is False:
+        base = base.outerjoin(AIAnalysis, AIAnalysis.article_id == Article.id).where(AIAnalysis.id.is_(None))
+    elif has_analysis is True or policy_type:
+        base = base.join(AIAnalysis, AIAnalysis.article_id == Article.id)
+        if policy_type:
+            base = base.where(cast(AIAnalysis.tags, String).ilike(f"%{policy_type}%"))
+    if q:
+        like = f"%{q}%"
+        base = base.where(
+            or_(
+                Article.title.ilike(like),
+                Article.content.ilike(like),
+                Article.source_name.ilike(like),
+            )
+        )
+    return base
+
+
+async def query_article_ids(
+    db: AsyncSession,
+    user: User,
+    *,
+    policy_level: PolicyLevel | None = None,
+    project_category: ProjectCategory | None = None,
+    source_name: str | None = None,
+    has_analysis: bool | None = None,
+    policy_type: str | None = None,
+    q: str | None = None,
+    article_ids: list[int] | None = None,
+    limit: int = 200,
+) -> list[int]:
+    base = _article_filter_query(
+        user,
+        policy_level=policy_level,
+        project_category=project_category,
+        source_name=source_name,
+        has_analysis=has_analysis,
+        policy_type=policy_type,
+        q=q,
+        article_ids=article_ids,
+    )
+    result = await db.execute(
+        base.order_by(*desc_nulls_last(Article.publish_time), Article.created_at.desc()).limit(limit)
+    )
+    return [row[0] for row in result.all()]

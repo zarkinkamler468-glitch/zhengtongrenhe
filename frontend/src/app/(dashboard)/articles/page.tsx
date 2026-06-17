@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { BookOpen, ExternalLink, Filter, Search, Sparkles } from "lucide-react";
+import { BookOpen, ExternalLink, Filter, RefreshCw, Search, Sparkles, Wrench } from "lucide-react";
 import { api, ArticleListItem, ArticleOverview } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +43,7 @@ export default function ArticlesPage() {
   const [analysis, setAnalysis] = useState<AnalysisFilter>("");
   const [policyType, setPolicyType] = useState("");
   const [sourceName, setSourceName] = useState("");
+  const [batchBusy, setBatchBusy] = useState<"fix" | "analyze" | null>(null);
   const limit = 15;
 
   const loadOverview = useCallback(() => {
@@ -80,6 +81,92 @@ export default function ArticlesPage() {
 
   const handleSearch = () => {
     setPage(0);
+  };
+
+  const batchFilters = () => ({
+    source_name: sourceName || undefined,
+    policy_level: level || undefined,
+    policy_type: policyType || undefined,
+    q: searchQ || undefined,
+    limit: 200,
+  });
+
+  const handleBatchFixDeadlines = async () => {
+    const analyzedCount = overview?.analyzed ?? 0;
+    if (analyzedCount === 0) {
+      alert("暂无已分析文章");
+      return;
+    }
+    const scope =
+      analysis === "analyzed" || sourceName || level || policyType || searchQ
+        ? "当前筛选条件下"
+        : "全部已分析";
+    if (
+      !confirm(
+        `将${scope}最多 200 篇已分析文章，按原文规则修正截止时间（不消耗 AI 配额）。\n\n是否继续？`
+      )
+    ) {
+      return;
+    }
+    setBatchBusy("fix");
+    try {
+      const res = await api.batchFixDeadlines(batchFilters());
+      alert(`修正完成：共 ${res.total} 篇，更新 ${res.updated} 篇，无变化 ${res.unchanged} 篇`);
+      loadOverview();
+      loadArticles();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "批量修正失败");
+    } finally {
+      setBatchBusy(null);
+    }
+  };
+
+  const handleBatchReanalyze = async () => {
+    const targetCount =
+      analysis === "analyzed"
+        ? total
+        : analysis === "pending"
+          ? 0
+          : overview?.analyzed ?? 0;
+    if (targetCount === 0) {
+      alert("没有可重新分析的已分析文章，请先筛选「已梳理」");
+      return;
+    }
+    const count = Math.min(targetCount, 50);
+    if (
+      !confirm(
+        `将按当前筛选条件批量重新分析最多 ${count} 篇文章（会覆盖已有 AI 结果并消耗 AI 配额）。\n\n是否继续？`
+      )
+    ) {
+      return;
+    }
+    setBatchBusy("analyze");
+    try {
+      const res = await api.batchAnalyzeArticles(
+        {
+          ...batchFilters(),
+          limit: 50,
+        },
+        true
+      );
+      if (res.status === "quota_exceeded") {
+        alert(`AI 次数不足：剩余 ${res.remaining ?? 0} 次，需要 ${res.count} 次`);
+        return;
+      }
+      if (res.status === "scheduled") {
+        alert(`已提交 ${res.count} 篇重新分析任务，请稍后刷新查看结果`);
+      } else if (res.status === "completed") {
+        alert(`批量分析完成：成功 ${res.success ?? 0} / ${res.count} 篇`);
+      } else if (res.status === "empty") {
+        alert("没有匹配的文章");
+      }
+      loadOverview();
+      loadArticles();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "批量分析失败");
+    } finally {
+      setBatchBusy(null);
+    }
   };
 
   const totalPages = Math.max(1, Math.ceil(total / limit));
@@ -238,7 +325,27 @@ export default function ArticlesPage() {
               政策列表
               <span className="text-sm font-normal text-slate-400">共 {total} 篇</span>
             </CardTitle>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled={batchBusy !== null || !overview?.analyzed || analysis === "pending"}
+                onClick={handleBatchFixDeadlines}
+                title="按原文规则修正截止时间，不消耗 AI 配额"
+              >
+                <Wrench className="mr-1 h-4 w-4" />
+                {batchBusy === "fix" ? "修正中..." : "批量修正截止时间"}
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled={batchBusy !== null || analysis === "pending"}
+                onClick={handleBatchReanalyze}
+                title="重新调用 AI 分析并覆盖已有结果"
+              >
+                <RefreshCw className="mr-1 h-4 w-4" />
+                {batchBusy === "analyze" ? "提交中..." : "批量重新分析"}
+              </Button>
               <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <Input
