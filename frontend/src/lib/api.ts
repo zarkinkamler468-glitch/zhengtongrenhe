@@ -2,7 +2,13 @@
 export function getApiBase(): string {
   const env = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/$/, "");
   if (typeof window !== "undefined") {
-    if (!env || /localhost|127\.0\.0\.1/.test(env)) {
+    if (!env) {
+      return window.location.origin;
+    }
+    // 构建时误写 localhost，但页面实际部署在公网域名 → 用当前 origin
+    const envIsLocal = /localhost|127\.0\.0\.1/.test(env);
+    const pageIsLocal = /localhost|127\.0\.0\.1/.test(window.location.hostname);
+    if (envIsLocal && !pageIsLocal) {
       return window.location.origin;
     }
     return env;

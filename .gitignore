@@ -21,7 +21,9 @@ out/
 
 # 运行时数据
 backend/data/
-backend/scripts/
+backend/scripts/*
+!backend/scripts/backfill_empty_content.py
+!backend/scripts/probe_sources.py
 *.log
 
 # 系统 / IDE

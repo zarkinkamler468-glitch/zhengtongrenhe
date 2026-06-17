@@ -232,16 +232,19 @@ class CrawlEngine:
         new_hash = content_hash(content or title)
 
         if existing:
-            if existing.content_hash == new_hash:
+            was_empty = not (existing.content or "").strip()
+            if existing.content_hash == new_hash and not (was_empty and content.strip()):
                 return None
             existing.title = title
-            existing.content = content
+            existing.content = content or existing.content
             existing.publish_time = publish_time or existing.publish_time
             existing.publisher = parsed["publisher"] or existing.publisher
             existing.content_hash = new_hash
             existing.updated_at = datetime.now(timezone.utc)
             article = existing
             outcome = "updated"
+            if was_empty and content.strip():
+                await schedule_article_analysis(article.id)
         else:
             policy_level = PolicyLevel.UNKNOWN
             project_category = None

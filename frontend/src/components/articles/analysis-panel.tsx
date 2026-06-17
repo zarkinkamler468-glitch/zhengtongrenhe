@@ -46,6 +46,7 @@ const KEY_INFO_META: Record<
   project_name: { label: "项目名称", icon: FileText, tone: "border-blue-200 bg-blue-50/80" },
   publish_time: { label: "发布时间", icon: Calendar, tone: "border-slate-200 bg-slate-50" },
   apply_start: { label: "申报开始", icon: Calendar, highlight: true, tone: "border-emerald-200 bg-emerald-50/90" },
+  notice_period: { label: "公示期", icon: Calendar, tone: "border-slate-200 bg-slate-50" },
   deadline: { label: "截止时间", icon: AlertTriangle, highlight: true, tone: "border-amber-300 bg-amber-50 ring-1 ring-amber-200/80" },
   funding_amount: { label: "资助金额", icon: CircleDollarSign, highlight: true, tone: "border-violet-200 bg-violet-50/90" },
   target_audience: { label: "申报对象", icon: Users, tone: "border-sky-200 bg-sky-50/80" },

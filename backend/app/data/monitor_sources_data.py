@@ -32,8 +32,8 @@ PROVINCIAL_SOURCES = [
         "url": "https://jy.tj.gov.cn",
         "type": SourceType.PROVINCIAL,
         "columns": [
-            {"column_name": "通知公告", "column_url": "https://jy.tj.gov.cn/ZWGK_52172/TZGG/", "column_type": ColumnType.NOTICE, "crawl_interval": 30},
-            {"column_name": "政策文件", "column_url": "https://jy.tj.gov.cn/ZWGK_52172/zcwj/", "column_type": ColumnType.POLICY, "crawl_interval": 60},
+            {"column_name": "通知公告", "column_url": "https://jy.tj.gov.cn/ZWGK_52172/TZGG/", "column_type": ColumnType.NOTICE, "crawl_interval": 30, "list_selector": "li a[onclick], li a[href*='t20']"},
+            {"column_name": "政策文件", "column_url": "https://jy.tj.gov.cn/ZWGK_52172/zcwj/", "column_type": ColumnType.POLICY, "crawl_interval": 60, "list_selector": "li a[onclick], li a[href*='t20']"},
         ],
     },
     {
@@ -114,6 +114,7 @@ PROVINCIAL_SOURCES = [
         "name": "浙江省教育厅",
         "url": "https://jyt.zj.gov.cn",
         "type": SourceType.PROVINCIAL,
+        "use_playwright": True,
         "columns": [
             {"column_name": "通知公告", "column_url": "https://jyt.zj.gov.cn/col/col1229266336/index.html", "column_type": ColumnType.NOTICE, "crawl_interval": 30},
             {"column_name": "政策文件", "column_url": "https://jyt.zj.gov.cn/col/col1229106823/index.html", "column_type": ColumnType.POLICY, "crawl_interval": 60},
@@ -236,7 +237,7 @@ PROVINCIAL_SOURCES = [
         "type": SourceType.PROVINCIAL,
         "columns": [
             {"column_name": "通知公告", "column_url": "https://jyt.guizhou.gov.cn/zwgk/tzgg/", "column_type": ColumnType.NOTICE, "crawl_interval": 30},
-            {"column_name": "政策文件", "column_url": "https://jyt.guizhou.gov.cn/zwgk/gzhgfxwjsjk/gfxwjsjk/", "column_type": ColumnType.POLICY, "crawl_interval": 60},
+            {"column_name": "政策文件", "column_url": "https://jyt.guizhou.gov.cn/zwgk/zcjd/", "column_type": ColumnType.POLICY, "crawl_interval": 60},
         ],
     },
     {
@@ -279,6 +280,7 @@ PROVINCIAL_SOURCES = [
         "name": "青海省教育厅",
         "url": "https://jyt.qinghai.gov.cn",
         "type": SourceType.PROVINCIAL,
+        "use_playwright": True,
         "columns": [
             {"column_name": "通知公告", "column_url": "https://jyt.qinghai.gov.cn/zwgk/tzgg/", "column_type": ColumnType.NOTICE, "crawl_interval": 30},
             {"column_name": "政策文件", "column_url": "https://jyt.qinghai.gov.cn/zwgk/zcfg/", "column_type": ColumnType.POLICY, "crawl_interval": 60},

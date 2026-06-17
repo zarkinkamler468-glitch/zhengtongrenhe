@@ -68,7 +68,8 @@ async def seed_monitor_sources(db: AsyncSession, *, allow_create: bool = True) -
                 if existing_col.use_playwright != use_playwright:
                     existing_col.use_playwright = use_playwright
                     changed = True
-                for key, val in DEFAULT_SELECTORS.items():
+                selectors = {**DEFAULT_SELECTORS, **{k: col[k] for k in DEFAULT_SELECTORS if col.get(k)}}
+                for key, val in selectors.items():
                     if getattr(existing_col, key) != val:
                         setattr(existing_col, key, val)
                         changed = True
