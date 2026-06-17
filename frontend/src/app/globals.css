@@ -8,7 +8,7 @@ body {
 
 .sidebar-scroll {
   scrollbar-width: thin;
-  scrollbar-color: rgba(100, 116, 139, 0.35) transparent;
+  scrollbar-color: rgba(148, 163, 184, 0.45) transparent;
 }
 
 .sidebar-scroll::-webkit-scrollbar {
@@ -21,11 +21,11 @@ body {
 
 .sidebar-scroll::-webkit-scrollbar-thumb {
   border-radius: 9999px;
-  background: rgba(100, 116, 139, 0.35);
+  background: rgba(148, 163, 184, 0.45);
 }
 
 .sidebar-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.45);
+  background: rgba(100, 116, 139, 0.55);
 }
 
 @keyframes map-marker-float {

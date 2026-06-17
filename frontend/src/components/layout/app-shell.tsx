@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { getToken } from "@/lib/api";
+import { landingBackgroundClass, landingBackgroundStyle } from "@/lib/landing-theme";
 import { Header } from "./header";
 import { Sidebar } from "./sidebar";
 
@@ -30,11 +31,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     "教育政策监测";
 
   return (
-    <div className="min-h-screen">
+    <div className={landingBackgroundClass} style={landingBackgroundStyle}>
       <Sidebar />
-      <div className="ml-[272px]">
+      <div className="ml-[272px] min-h-screen">
         <Header title={title} />
-        <main className="p-8">{children}</main>
+        <main className="px-8 pb-10 pt-2">{children}</main>
       </div>
     </div>
   );

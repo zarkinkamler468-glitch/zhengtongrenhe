@@ -9,6 +9,7 @@ import { api } from "@/lib/api";
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
+import { landingBackgroundClass, landingBackgroundStyle } from "@/lib/landing-theme";
 import {
   ArrowRight,
   BarChart3,
@@ -174,11 +175,8 @@ export default function HomePage() {
   return (
     <div
       ref={rootRef}
-      className="min-h-screen bg-[#e8eef4] text-slate-800"
-      style={{
-        backgroundImage:
-          "radial-gradient(ellipse 90% 60% at 70% 0%, rgba(147,197,253,0.35), transparent 55%), radial-gradient(ellipse 50% 40% at 10% 80%, rgba(167,243,208,0.25), transparent 50%), linear-gradient(180deg, #eef3f8 0%, #e4ebf3 50%, #dfe8f2 100%)",
-      }}
+      className={landingBackgroundClass}
+      style={landingBackgroundStyle}
     >
       {/* 顶栏 — 悬浮胶囊 */}
       <div className="sticky top-0 z-50 px-4 pt-5 md:px-8">

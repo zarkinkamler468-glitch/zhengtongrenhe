@@ -1,17 +1,23 @@
 import { cn } from "@/lib/utils";
+import { glassCardClass } from "@/lib/landing-theme";
 import { HTMLAttributes } from "react";
 
 export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("rounded-xl border border-slate-200 bg-white shadow-sm", className)}
+      className={cn(glassCardClass, "transition hover:shadow-[0_12px_40px_rgba(59,130,246,0.08)]", className)}
       {...props}
     />
   );
 }
 
 export function CardHeader({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("border-b border-slate-100 px-6 py-4", className)} {...props} />;
+  return (
+    <div
+      className={cn("border-b border-white/60 px-6 py-4", className)}
+      {...props}
+    />
+  );
 }
 
 export function CardTitle({ className, ...props }: HTMLAttributes<HTMLHeadingElement>) {
