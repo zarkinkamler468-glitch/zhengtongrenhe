@@ -93,9 +93,18 @@ def _is_valid_list_item(url: str, title: str, base_url: str) -> bool:
 def _select_list_nodes(soup: BeautifulSoup, list_selector: str | None):
     if list_selector:
         return soup.select(list_selector)
-    for selector in ("#list a", ".moe-list a", "ul.list a"):
+    for selector in (
+        "ul.wzlb a",
+        "a[href*='t20']",
+        "#list a",
+        ".moe-list a",
+        "ul.list a",
+        ".news_list li a",
+        ".xxgk-list li a",
+        "div.list li a",
+    ):
         nodes = soup.select(selector)
-        if nodes:
+        if len(nodes) >= 3:
             return nodes
     return soup.select("ul li a, table tr a, .list li a, .news-list li a")
 

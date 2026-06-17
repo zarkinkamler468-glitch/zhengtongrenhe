@@ -25,6 +25,7 @@ async def _fetch_httpx(url: str, timeout: float) -> str:
         headers=DEFAULT_HEADERS,
         follow_redirects=True,
         timeout=timeout,
+        verify=False,
     ) as client:
         resp = await client.get(url)
         resp.raise_for_status()
