@@ -85,7 +85,11 @@ async def analyze_article_record(
         if billing_user and not await try_consume_ai(db, billing_user):
             return {"status": "quota_exceeded", "article_id": article_id}
 
-    data = await ai_service.analyze_article(article.title, article.content or "")
+    data = await ai_service.analyze_article(
+        article.title,
+        article.content or "",
+        publish_time=article.publish_time,
+    )
     embedding = await ai_service.get_embedding(f"{article.title}\n{data.get('summary_300', '')}")
 
     apply_analysis_metadata(article, data)

@@ -1,9 +1,10 @@
 import json
 import logging
-import re
+from datetime import datetime
 
 from openai import AsyncOpenAI
 
+from app.ai.key_info_extractor import extract_deadline, refine_key_info
 from app.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -26,7 +27,7 @@ SUMMARY_PROMPT = """你是教育政策分析专家。请对以下政策/通知�
     "project_name": "项目名称或null",
     "publish_time": "发布时间或null",
     "apply_start": "申报开始时间或null",
-    "deadline": "截止时间或null",
+    "deadline": "申报或报名截止时间（勿填发布时间/印发日期/施行日期；原文无则 null，格式如 2025年6月30日）",
     "funding_amount": "资助金额或null",
     "target_audience": "申报对象或null",
     "contact": "联系方式或null",
@@ -67,9 +68,15 @@ class AIService:
                 base_url=settings.llm_base_url,
             )
 
-    async def analyze_article(self, title: str, content: str) -> dict:
+    async def analyze_article(
+        self,
+        title: str,
+        content: str,
+        *,
+        publish_time: datetime | None = None,
+    ) -> dict:
         if not self.client:
-            return self._mock_analysis(title, content)
+            return self._mock_analysis(title, content, publish_time=publish_time)
 
         text = (content or title)[:8000]
         prompt = SUMMARY_PROMPT.format(title=title, content=text)
@@ -82,10 +89,25 @@ class AIService:
                 response_format={"type": "json_object"},
             )
             raw = resp.choices[0].message.content or "{}"
-            return json.loads(raw)
+            data = json.loads(raw)
+            return self._postprocess_analysis(data, text, publish_time=publish_time)
         except Exception as exc:
             logger.exception("AI 分析失败: %s", exc)
-            return self._mock_analysis(title, content)
+            return self._mock_analysis(title, content, publish_time=publish_time)
+
+    def _postprocess_analysis(
+        self,
+        data: dict,
+        content: str,
+        *,
+        publish_time: datetime | None = None,
+    ) -> dict:
+        hint = publish_time
+        if hint and hint.tzinfo is not None:
+            hint = hint.replace(tzinfo=None)
+        key_info = refine_key_info(content, data.get("key_info"), publish_hint=hint)
+        data["key_info"] = key_info
+        return data
 
     async def get_embedding(self, text: str) -> list[float] | None:
         if not self.client or not settings.embedding_model:
@@ -124,9 +146,30 @@ class AIService:
             logger.exception("AI 问答失败: %s", exc)
             return "AI 服务暂时不可用，请稍后重试。"
 
-    def _mock_analysis(self, title: str, content: str) -> dict:
+    def _mock_analysis(
+        self,
+        title: str,
+        content: str,
+        *,
+        publish_time: datetime | None = None,
+    ) -> dict:
         text = content or title
         short = text[:100] if text else title
+        hint = publish_time.replace(tzinfo=None) if publish_time and publish_time.tzinfo else publish_time
+        key_info = refine_key_info(
+            text,
+            {
+                "project_name": None,
+                "publish_time": None,
+                "apply_start": None,
+                "deadline": extract_deadline(text, hint),
+                "funding_amount": None,
+                "target_audience": None,
+                "contact": None,
+                "contact_person": None,
+            },
+            publish_hint=hint,
+        )
         return {
             "summary_100": short[:100],
             "summary_300": text[:300] if text else title,
@@ -138,16 +181,7 @@ class AIService:
                 "urgency": "中",
             },
             "keywords": self._extract_keywords(text or title),
-            "key_info": {
-                "project_name": None,
-                "publish_time": None,
-                "apply_start": None,
-                "deadline": self._extract_deadline(text),
-                "funding_amount": None,
-                "target_audience": None,
-                "contact": None,
-                "contact_person": None,
-            },
+            "key_info": key_info,
             "analysis": {
                 "background": "待 AI 模型配置后生成详细解读。",
                 "reason": "待分析",
@@ -165,10 +199,6 @@ class AIService:
             "教育数字化", "实训基地", "项目申报", "科研项目", "教改",
         ]
         return [k for k in candidates if k in text][:8]
-
-    def _extract_deadline(self, text: str) -> str | None:
-        match = re.search(r"截止[时间至：:]*\s*(\d{4}年\d{1,2}月\d{1,2}日|\d{4}-\d{2}-\d{2})", text)
-        return match.group(1) if match else None
 
 
 ai_service = AIService()
