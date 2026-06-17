@@ -3,7 +3,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.ai.key_info_extractor import refine_key_info
+from app.ai.key_info_extractor import refine_analysis_data
 from app.ai.service import ai_service
 from app.models.analysis import AIAnalysis
 from app.models.article import Article, PolicyLevel, ProjectCategory
@@ -139,18 +139,38 @@ async def fix_article_key_info_record(db: AsyncSession, article_id: int) -> dict
 
     analysis = article.analysis
     old_info = dict(analysis.key_info or {})
-    new_info = refine_key_info(
+    old_snapshot = {
+        "key_info": old_info,
+        "summary_100": analysis.summary_100,
+        "summary_300": analysis.summary_300,
+        "summary_page": analysis.summary_page,
+        "analysis": dict(analysis.analysis or {}),
+    }
+    refined = refine_analysis_data(
+        old_snapshot,
         article.content or "",
-        analysis.key_info,
         publish_hint=article.publish_time,
     )
-    if new_info == old_info:
+    new_info = refined.get("key_info") or {}
+    if refined == old_snapshot:
         return {"status": "unchanged", "article_id": article_id}
 
     analysis.key_info = new_info
+    analysis.summary_100 = refined.get("summary_100")
+    analysis.summary_300 = refined.get("summary_300")
+    analysis.summary_page = refined.get("summary_page")
+    analysis.analysis = refined.get("analysis")
     if analysis.json_result:
         merged = dict(analysis.json_result)
-        merged["key_info"] = new_info
+        merged.update(
+            {
+                "key_info": new_info,
+                "summary_100": analysis.summary_100,
+                "summary_300": analysis.summary_300,
+                "summary_page": analysis.summary_page,
+                "analysis": analysis.analysis,
+            }
+        )
         analysis.json_result = merged
 
     try:
@@ -163,6 +183,8 @@ async def fix_article_key_info_record(db: AsyncSession, article_id: int) -> dict
         "article_id": article_id,
         "old_deadline": old_info.get("deadline"),
         "new_deadline": new_info.get("deadline"),
+        "old_publish_time": old_info.get("publish_time"),
+        "new_publish_time": new_info.get("publish_time"),
     }
 
 

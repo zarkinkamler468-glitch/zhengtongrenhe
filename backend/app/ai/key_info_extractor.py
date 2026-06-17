@@ -352,3 +352,183 @@ def refine_key_info(
             info["deadline"] = None
 
     return info
+
+
+def _collect_source_date_map(text: str) -> tuple[set[str], dict[tuple[int, int], set[int]]]:
+    """原文中出现的完整日期及 (月,日)->年份集合。"""
+    source_cns: set[str] = set()
+    md_years: dict[tuple[int, int], set[int]] = {}
+    if not text:
+        return source_cns, md_years
+    for match in re.finditer(_DATE_CN, text):
+        y, mo, d = int(match.group(1)), int(match.group(2)), int(match.group(3))
+        try:
+            cn = format_date_cn(datetime(y, mo, d))
+        except ValueError:
+            continue
+        source_cns.add(cn)
+        md_years.setdefault((mo, d), set()).add(y)
+    return source_cns, md_years
+
+
+def _notice_range_end_day(notice: str) -> int | None:
+    """从公示期表述中取结束日（用于粗匹配 AI 误写范围）。"""
+    if not notice:
+        return None
+    range_end = rf"(?:{_DATE_CN}|\d{{1,2}}月\d{{1,2}}日|\d{{1,2}}日)"
+    match = re.search(rf"{_DATE_CN}\s*至\s*({range_end})", notice)
+    if not match:
+        return None
+    end_raw = match.group(1)
+    end_dt = parse_flexible_date(end_raw)
+    if end_dt:
+        return end_dt.day
+    d_only = re.fullmatch(r"(\d{1,2})日", end_raw)
+    if d_only:
+        return int(d_only.group(1))
+    m_only = re.fullmatch(r"(\d{1,2})月(\d{1,2})日", end_raw)
+    if m_only:
+        return int(m_only.group(2))
+    return None
+
+
+def _fix_notice_period_phrases(text: str, notice: str | None, source: str) -> str:
+    """将摘要中误写的公示期日期范围替换为原文提取结果。"""
+    if not text or not notice:
+        return text
+    if notice in text:
+        return text
+
+    range_end = rf"(?:{_DATE_CN}|\d{{1,2}}月\d{{1,2}}日|\d{{1,2}}日)"
+    pattern = re.compile(
+        rf"(公示期?[为是：:\s]*)(\d{{4}}年\d{{1,2}}月\d{{1,2}}日\s*至\s*{range_end})"
+    )
+    src_end_day = _notice_range_end_day(notice)
+
+    def _repl(match: re.Match[str]) -> str:
+        span = match.group(2)
+        if span in source or span in notice:
+            return match.group(0)
+        wrong_end = re.search(rf"至\s*({range_end})$", span)
+        if wrong_end:
+            end_raw = wrong_end.group(1)
+            end_dt = parse_flexible_date(end_raw)
+            wrong_day = end_dt.day if end_dt else None
+            if not wrong_day:
+                d_only = re.fullmatch(r"(\d{1,2})日", end_raw)
+                if d_only:
+                    wrong_day = int(d_only.group(1))
+                else:
+                    m_only = re.fullmatch(r"(\d{1,2})月(\d{1,2})日", end_raw)
+                    if m_only:
+                        wrong_day = int(m_only.group(2))
+            if src_end_day and wrong_day and wrong_day != src_end_day:
+                return match.group(1) + notice
+            if not _date_in_text(span, source):
+                return match.group(1) + notice
+        return match.group(0)
+
+    return pattern.sub(_repl, text)
+
+
+def _fix_wrong_years_in_text(text: str, source: str) -> str:
+    """当原文对同一月日仅有一个年份时，修正 AI 摘要中的错年。"""
+    if not text or not source:
+        return text
+
+    source_cns, md_years = _collect_source_date_map(source)
+
+    def _repl(match: re.Match[str]) -> str:
+        y, mo, d = int(match.group(1)), int(match.group(2)), int(match.group(3))
+        try:
+            cn = format_date_cn(datetime(y, mo, d))
+        except ValueError:
+            return match.group(0)
+        if cn in source_cns:
+            return cn
+        years = md_years.get((mo, d))
+        if not years or len(years) != 1:
+            return match.group(0)
+        correct_y = next(iter(years))
+        if y == correct_y:
+            return match.group(0)
+        correct_cn = format_date_cn(datetime(correct_y, mo, d))
+        if correct_cn in source_cns:
+            return correct_cn
+        return match.group(0)
+
+    return re.sub(_DATE_CN, _repl, text)
+
+
+def sanitize_dates_in_prose(
+    text: str,
+    source: str,
+    key_info: dict | None = None,
+    *,
+    publish_hint: datetime | None = None,
+) -> str:
+    """修正 AI 摘要/解读中的日期幻觉（错年、错公示期）。"""
+    if not text:
+        return text
+
+    info = key_info or {}
+    notice = info.get("notice_period") or extract_notice_period(source or "")
+    fixed = _fix_notice_period_phrases(text, notice, source or "")
+    fixed = _fix_wrong_years_in_text(fixed, source or "")
+
+    pub = info.get("publish_time")
+    if pub and publish_hint:
+        pub_dt = parse_flexible_date(str(pub))
+        hint_dt = publish_hint.replace(tzinfo=None) if publish_hint.tzinfo else publish_hint
+        if pub_dt and pub_dt.date() == hint_dt.date():
+            wrong_pub = re.compile(
+                rf"((?:发布时间|发布日期)[为是：:\s]*)(\d{{4}}年{pub_dt.month}月{pub_dt.day}日)"
+            )
+            correct = format_date_cn(pub_dt)
+            fixed = wrong_pub.sub(lambda m: m.group(1) + correct, fixed)
+
+    return fixed
+
+
+_ANALYSIS_TEXT_FIELDS = ("summary_100", "summary_300", "summary_page")
+_ANALYSIS_SECTION_FIELDS = (
+    "background",
+    "reason",
+    "core_content",
+    "key_tasks",
+    "impact_university",
+    "impact_enterprise",
+    "application_advice",
+)
+
+
+def refine_analysis_data(
+    data: dict,
+    content: str,
+    *,
+    publish_hint: datetime | None = None,
+) -> dict:
+    """校验 key_info 并修正 AI 各文本字段中的日期。"""
+    result = dict(data or {})
+    key_info = refine_key_info(content, result.get("key_info"), publish_hint=publish_hint)
+    result["key_info"] = key_info
+
+    for field in _ANALYSIS_TEXT_FIELDS:
+        val = result.get(field)
+        if val:
+            result[field] = sanitize_dates_in_prose(
+                str(val), content, key_info, publish_hint=publish_hint
+            )
+
+    analysis = result.get("analysis")
+    if isinstance(analysis, dict):
+        fixed_analysis = dict(analysis)
+        for field in _ANALYSIS_SECTION_FIELDS:
+            val = fixed_analysis.get(field)
+            if val:
+                fixed_analysis[field] = sanitize_dates_in_prose(
+                    str(val), content, key_info, publish_hint=publish_hint
+                )
+        result["analysis"] = fixed_analysis
+
+    return result

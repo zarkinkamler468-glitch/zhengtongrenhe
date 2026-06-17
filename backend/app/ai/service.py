@@ -4,7 +4,7 @@ from datetime import datetime
 
 from openai import AsyncOpenAI
 
-from app.ai.key_info_extractor import extract_deadline, refine_key_info
+from app.ai.key_info_extractor import extract_deadline, format_date_cn, refine_analysis_data
 from app.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -46,8 +46,10 @@ SUMMARY_PROMPT = """你是教育政策分析专家。请对以下政策/通知�
 }}
 
 原文标题：{title}
-原文内容：
+{publish_hint}原文内容：
 {content}
+
+重要：摘要与解读中出现的所有日期必须与原文一致，不得臆造或错用年份（如原文为2026年不可写成2025年）；公示期须按原文表述。
 """
 
 QA_PROMPT = """你是教育政策智能助手。根据以下检索到的政策信息回答用户问题。
@@ -80,7 +82,11 @@ class AIService:
             return self._mock_analysis(title, content, publish_time=publish_time)
 
         text = (content or title)[:8000]
-        prompt = SUMMARY_PROMPT.format(title=title, content=text)
+        publish_hint = ""
+        if publish_time:
+            hint = publish_time.replace(tzinfo=None) if publish_time.tzinfo else publish_time
+            publish_hint = f"网页采集发布时间：{format_date_cn(hint)}\n"
+        prompt = SUMMARY_PROMPT.format(title=title, content=text, publish_hint=publish_hint)
 
         try:
             resp = await self.client.chat.completions.create(
@@ -106,9 +112,7 @@ class AIService:
         hint = publish_time
         if hint and hint.tzinfo is not None:
             hint = hint.replace(tzinfo=None)
-        key_info = refine_key_info(content, data.get("key_info"), publish_hint=hint)
-        data["key_info"] = key_info
-        return data
+        return refine_analysis_data(data, content, publish_hint=hint)
 
     async def get_embedding(self, text: str) -> list[float] | None:
         if not self.client or not settings.embedding_model:
@@ -157,42 +161,41 @@ class AIService:
         text = content or title
         short = text[:100] if text else title
         hint = publish_time.replace(tzinfo=None) if publish_time and publish_time.tzinfo else publish_time
-        key_info = refine_key_info(
-            text,
+        return refine_analysis_data(
             {
-                "project_name": None,
-                "publish_time": None,
-                "apply_start": None,
-                "deadline": extract_deadline(text, hint),
-                "funding_amount": None,
-                "target_audience": None,
-                "contact": None,
-                "contact_person": None,
+                "summary_100": short[:100],
+                "summary_300": text[:300] if text else title,
+                "summary_page": text[:800] if text else title,
+                "tags": {
+                    "policy_type": "通知公告",
+                    "industry": "教育",
+                    "level": "未知",
+                    "urgency": "中",
+                },
+                "keywords": self._extract_keywords(text or title),
+                "key_info": {
+                    "project_name": None,
+                    "publish_time": None,
+                    "apply_start": None,
+                    "deadline": extract_deadline(text, hint),
+                    "funding_amount": None,
+                    "target_audience": None,
+                    "contact": None,
+                    "contact_person": None,
+                },
+                "analysis": {
+                    "background": "待 AI 模型配置后生成详细解读。",
+                    "reason": "待分析",
+                    "core_content": short,
+                    "key_tasks": "待分析",
+                    "impact_university": "待分析",
+                    "impact_enterprise": "待分析",
+                    "application_advice": "请关注官方通知原文及附件要求。",
+                },
             },
+            text,
             publish_hint=hint,
         )
-        return {
-            "summary_100": short[:100],
-            "summary_300": text[:300] if text else title,
-            "summary_page": text[:800] if text else title,
-            "tags": {
-                "policy_type": "通知公告",
-                "industry": "教育",
-                "level": "未知",
-                "urgency": "中",
-            },
-            "keywords": self._extract_keywords(text or title),
-            "key_info": key_info,
-            "analysis": {
-                "background": "待 AI 模型配置后生成详细解读。",
-                "reason": "待分析",
-                "core_content": short,
-                "key_tasks": "待分析",
-                "impact_university": "待分析",
-                "impact_enterprise": "待分析",
-                "application_advice": "请关注官方通知原文及附件要求。",
-            },
-        }
 
     def _extract_keywords(self, text: str) -> list[str]:
         candidates = [

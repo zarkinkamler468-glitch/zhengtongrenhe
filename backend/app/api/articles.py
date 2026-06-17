@@ -162,7 +162,7 @@ async def batch_fix_deadlines(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(require_roles(UserRoleEnum.ADMIN, UserRoleEnum.ANALYST, UserRoleEnum.USER)),
 ):
-    """根据原文规则批量修正已分析文章的截止时间等关键信息（不调用 AI，不消耗配额）。"""
+    """根据原文规则批量修正已分析文章的截止时间、发布时间及摘要中的日期（不调用 AI，不消耗配额）。"""
     limit = min(max(body.limit, 1), 500)
     try:
         result = await batch_fix_article_key_info(
