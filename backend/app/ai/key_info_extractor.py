@@ -248,15 +248,17 @@ def extract_publish_time(text: str) -> str | None:
     if not text:
         return None
     for pattern in (
-        r"(?:发布时间|发布日期|印发时间)[：:\s]*(\d{4}-\d{2}-\d{2}(?:\s+\d{1,2}:\d{2})?)",
-        rf"(?:发布时间|发布日期|印发时间)[：:\s]*({_DATE_ANY})",
+        r"(?:发布时间|发布日期|印发时间|印发日期|成文日期|发文日期)[：:\s]*(\d{4}-\d{2}-\d{2}(?:\s+\d{1,2}:\d{2})?)",
+        rf"(?:发布时间|发布日期|印发时间|印发日期|成文日期|发文日期)[：:\s]*({_DATE_ANY})",
         rf"({_DATE_ANY})\s*(?:发布|印发)",
     ):
         match = re.search(pattern, text)
         if match:
             dt = parse_flexible_date(match.group(1))
             if dt:
-                return format_date_cn(dt)
+                cn = format_date_cn(dt)
+                if not _is_notice_period_date(text, cn):
+                    return cn
     return None
 
 
@@ -316,14 +318,31 @@ def refine_key_info(
                 # AI 与原文规则不一致时，优先原文高置信提取
                 info["deadline"] = extracted_deadline
 
-    if not info.get("publish_time"):
-        if extracted_publish:
-            info["publish_time"] = extracted_publish
-        elif publish_hint:
-            info["publish_time"] = format_date_cn(publish_hint)
-
     if not info.get("apply_start") and extracted_apply:
         info["apply_start"] = extracted_apply
+
+    # 发布时间：原文「发布时间」> 采集元数据 > 清除 AI 误填（含公示期日期）
+    hint_dt = None
+    if publish_hint:
+        hint_dt = publish_hint.replace(tzinfo=None) if publish_hint.tzinfo else publish_hint
+
+    if extracted_publish:
+        info["publish_time"] = extracted_publish
+    elif hint_dt:
+        info["publish_time"] = format_date_cn(hint_dt)
+    else:
+        llm_publish = info.get("publish_time")
+        if llm_publish and (
+            _is_notice_period_date(text, str(llm_publish))
+            or not _date_in_text(str(llm_publish), text)
+        ):
+            info["publish_time"] = None
+
+    if info.get("publish_time") and hint_dt:
+        llm_dt = parse_flexible_date(str(info["publish_time"]))
+        if llm_dt and llm_dt.date() != hint_dt.date():
+            if _is_notice_period_date(text, str(info["publish_time"])) or not extracted_publish:
+                info["publish_time"] = format_date_cn(hint_dt)
 
     deadline = info.get("deadline")
     if deadline:
