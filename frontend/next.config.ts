@@ -2,7 +2,13 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  /** HTML 不长期缓存，避免部署后仍引用已删除的 chunk；带 hash 的静态资源可长期缓存 */
+  /** 关闭静态页默认长期缓存（否则首页会 s-maxage=31536000 导致部署后错乱） */
+  experimental: {
+    staleTimes: {
+      dynamic: 0,
+      static: 0,
+    },
+  },
   async headers() {
     return [
       {

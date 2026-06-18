@@ -35,15 +35,19 @@ ASSET="$(echo "$HTML" | grep -oE '/_next/static/[^"'\'' ]+\.(js|css)' | head -1 
 if [ -z "$ASSET" ]; then
   echo "警告: 首页 HTML 中未找到 _next/static 资源引用"
 else
-  echo "==> 校验静态资源: $ASSET"
+  echo "==> 校验首页静态资源: $ASSET"
   CODE="$(curl -s -o /dev/null -w '%{http_code}' "$BASE$ASSET")"
   if [ "$CODE" = "200" ]; then
     echo "OK: $ASSET -> 200"
   else
-    echo "错误: $ASSET -> HTTP $CODE（HTML 与 static 版本不一致或容器缺文件）"
+    echo "错误: $ASSET -> HTTP $CODE"
+    echo "      首页 HTML 引用的 static 文件不存在，请重新构建并清除宝塔站点缓存"
     exit 1
   fi
 fi
+
+echo "==> 首页 Cache-Control（应为 no-store，不能是 s-maxage=31536000）"
+curl -sSI "$BASE/" | grep -i cache-control || true
 
 echo "==> 校验 build-id.txt"
 if curl -fsS "$BASE/build-id.txt" >/dev/null 2>&1; then

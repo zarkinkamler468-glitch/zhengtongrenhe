@@ -50,6 +50,6 @@ fi
 
 echo ""
 echo "==> 更新完成。请在宝塔："
-echo "    1. 站点 Nginx 参考 deploy/baota-nginx.conf（HTML 不缓存、/_next/static 可缓存）"
-echo "    2. 关闭站点「静态缓存 / CDN 全站缓存 / 网站加速」"
-echo "    3. 浏览器 Ctrl+Shift+R 强刷；可访问 https://你的域名/build-id.txt 核对版本"
+echo "    1. 站点 Nginx 必须用 deploy/baota-nginx.conf（含 proxy_hide_header Cache-Control always）"
+echo "    2. 网站 → 清除缓存 / 关闭静态缓存、CDN、网站加速"
+echo "    3. 浏览器 Ctrl+Shift+R 强刷；核对 https://你的域名/build-id.txt"
