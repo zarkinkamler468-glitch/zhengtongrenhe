@@ -4,8 +4,7 @@ FROM ${DOCKER_REGISTRY}/node:20-bookworm-slim AS builder
 
 WORKDIR /app
 
-ENV NODE_ENV=development \
-    NODE_OPTIONS=--max-old-space-size=2048
+ENV NODE_OPTIONS=--max-old-space-size=2048
 
 COPY package.json package-lock.json .npmrc ./
 
@@ -17,14 +16,16 @@ RUN set -eux; \
     npm config set maxsockets 5; \
     sed -i 's|https://registry.npmjs.org/|https://registry.npmmirror.com/|g' package-lock.json; \
     rm -rf node_modules; \
-    npm ci --no-audit --no-fund || (rm -rf node_modules && npm install --no-audit --no-fund); \
+    NODE_ENV=development npm ci --no-audit --no-fund \
+      || (rm -rf node_modules && NODE_ENV=development npm install --no-audit --no-fund); \
     node -p "'next ' + require('next/package.json').version"; \
     test -f node_modules/next/dist/bin/next
 
 COPY . .
 
 ARG NEXT_PUBLIC_API_URL=http://localhost:8000
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+    NODE_ENV=production
 
 RUN node node_modules/next/dist/bin/next build
 
