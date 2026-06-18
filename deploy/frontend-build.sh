@@ -78,4 +78,7 @@ if [ ! -d .next/standalone ]; then
   exit 1
 fi
 
+# 供部署校验与排查 chunk 404
+cp .next/BUILD_ID public/build-id.txt
+
 echo ">> 前端构建完成: $(cat .next/BUILD_ID)"

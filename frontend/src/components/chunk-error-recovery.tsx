@@ -14,6 +14,16 @@ function isChunkLoadError(message: string | undefined): boolean {
   );
 }
 
+function isNextStaticAsset(url: string | undefined): boolean {
+  if (!url) return false;
+  try {
+    const path = new URL(url, window.location.origin).pathname;
+    return path.includes("/_next/static/");
+  } catch {
+    return url.includes("/_next/static/");
+  }
+}
+
 /** 部署后 HTML 与 _next/static 版本不一致时，自动刷新一次拉取最新资源 */
 export function ChunkErrorRecovery() {
   useEffect(() => {
@@ -29,6 +39,14 @@ export function ChunkErrorRecovery() {
     };
 
     const onError = (event: ErrorEvent) => {
+      const target = event.target;
+      if (target instanceof HTMLScriptElement || target instanceof HTMLLinkElement) {
+        const url = target instanceof HTMLScriptElement ? target.src : target.href;
+        if (isNextStaticAsset(url)) {
+          tryReload(`static asset failed: ${url}`);
+          return;
+        }
+      }
       if (isChunkLoadError(event.message)) {
         tryReload(event.message);
       }
@@ -47,10 +65,10 @@ export function ChunkErrorRecovery() {
       }
     };
 
-    window.addEventListener("error", onError);
+    window.addEventListener("error", onError, true);
     window.addEventListener("unhandledrejection", onRejection);
     return () => {
-      window.removeEventListener("error", onError);
+      window.removeEventListener("error", onError, true);
       window.removeEventListener("unhandledrejection", onRejection);
     };
   }, []);

@@ -14,7 +14,11 @@ RUN addgroup --system --gid 1001 nodejs && \
 
 COPY public ./public
 COPY .next/standalone ./
+# standalone 不含 static，必须复制到 standalone 根目录下的 .next/static
 COPY .next/static ./.next/static
+
+RUN test -f .next/BUILD_ID && test -d .next/static/chunks \
+    || (echo "ERROR: .next/static 未打入镜像" && exit 1)
 
 USER nextjs
 
