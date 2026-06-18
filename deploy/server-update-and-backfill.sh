@@ -10,7 +10,8 @@ LIMIT="${1:-500}"
 echo "==> git pull"
 git pull
 
-echo "==> docker compose build & up"
+echo "==> docker compose build & up (web 无缓存)"
+docker compose build --no-cache web
 docker compose up -d --build api celery-worker celery-beat web
 
 echo "==> 等待 API 就绪..."

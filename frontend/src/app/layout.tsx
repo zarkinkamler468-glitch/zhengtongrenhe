@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ChunkErrorRecovery } from "@/components/chunk-error-recovery";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -9,7 +10,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="zh-CN">
-      <body>{children}</body>
+      <body>
+        <ChunkErrorRecovery />
+        {children}
+      </body>
     </html>
   );
 }
