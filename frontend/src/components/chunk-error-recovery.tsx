@@ -35,7 +35,9 @@ export function ChunkErrorRecovery() {
       }
       sessionStorage.setItem(RELOAD_KEY, String(Date.now()));
       console.warn("[chunk-recovery] 检测到静态资源版本不一致，正在刷新页面…", reason);
-      window.location.reload();
+      const url = new URL(window.location.href);
+      url.searchParams.set("_", String(Date.now()));
+      window.location.replace(url.toString());
     };
 
     const onError = (event: ErrorEvent) => {

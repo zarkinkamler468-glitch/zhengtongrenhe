@@ -78,6 +78,13 @@ if [ ! -d .next/standalone ]; then
   exit 1
 fi
 
+CSS_COUNT="$(find .next/static/css -type f 2>/dev/null | wc -l | tr -d ' ')"
+if [ "${CSS_COUNT:-0}" -lt 1 ]; then
+  echo "错误: .next/static/css 为空，构建不完整"
+  exit 1
+fi
+echo ">> static/css 文件数: $CSS_COUNT"
+
 # 供部署校验与排查 chunk 404
 cp .next/BUILD_ID public/build-id.txt
 
