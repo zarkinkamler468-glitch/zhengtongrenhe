@@ -6,7 +6,6 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 FRONTEND="$ROOT/frontend"
 cd "$FRONTEND"
 
-export NODE_ENV=development
 export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=2048}"
 
 # 从项目 .env 读取公网地址
@@ -27,6 +26,11 @@ if ! command -v node >/dev/null 2>&1; then
   exit 1
 fi
 
+NODE_MAJOR="$(node -p "process.versions.node.split('.')[0]")"
+if [ "$NODE_MAJOR" -lt 20 ]; then
+  echo "警告: 当前 Node $(node -v)，建议升级到 20+（宝塔 Node 版本管理器）"
+fi
+
 echo ">> node $(node -v) | npm $(npm -v)"
 
 npm config set registry https://registry.npmmirror.com
@@ -44,10 +48,10 @@ fi
 rm -rf node_modules .next
 
 echo ">> npm ci（国内镜像）..."
-if ! npm ci --no-audit --no-fund; then
+if ! NODE_ENV=development npm ci --no-audit --no-fund; then
   echo ">> npm ci 失败，改用 npm install..."
   rm -rf node_modules
-  npm install --no-audit --no-fund
+  NODE_ENV=development npm install --no-audit --no-fund
 fi
 
 if [ -n "$LOCK_BAK" ]; then
@@ -61,6 +65,7 @@ if [ ! -f node_modules/next/dist/bin/next ]; then
 fi
 
 echo ">> next build..."
+export NODE_ENV=production
 node node_modules/next/dist/bin/next build
 
 if [ ! -f .next/BUILD_ID ]; then
