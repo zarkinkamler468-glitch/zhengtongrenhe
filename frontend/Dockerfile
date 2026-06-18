@@ -4,15 +4,22 @@ FROM ${DOCKER_REGISTRY}/node:20-bookworm-slim AS builder
 
 WORKDIR /app
 
+# BuildKit 常注入 NODE_ENV=production，会导致 devDependencies 缺失；构建阶段强制 development
+ENV NODE_ENV=development
+
 COPY package.json package-lock.json ./
-RUN npm ci --registry=https://registry.npmmirror.com --include=dev
+RUN npm config set registry https://registry.npmmirror.com \
+    && npm ci \
+    && test -f node_modules/next/dist/bin/next \
+    || (echo "ERROR: next 未安装，请检查 npm 镜像与 package-lock.json" && npm ls next && exit 1)
 
 COPY . .
 
 ARG NEXT_PUBLIC_API_URL=http://localhost:8000
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
-RUN npm run build
+# 直接调用 next 二进制，避免 PATH 中找不到 node_modules/.bin/next
+RUN node node_modules/next/dist/bin/next build
 
 FROM ${DOCKER_REGISTRY}/node:20-alpine AS runner
 
