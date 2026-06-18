@@ -9,15 +9,15 @@ ENV NODE_ENV=development \
 
 COPY package.json package-lock.json .npmrc ./
 
-# lockfile 中 resolved 默认指向 npmjs，国内 VPS 易超时导致 next 半安装；改用 npmmirror 并增加重试
+# 容器内构建（网络良好时）；国内 VPS 建议用 deploy/frontend-build.sh + Dockerfile.prebuilt
 RUN set -eux; \
     npm config set registry https://registry.npmmirror.com; \
-    npm config set fetch-retries 5; \
-    npm config set fetch-retry-mintimeout 20000; \
-    npm config set fetch-retry-maxtimeout 120000; \
+    npm config set fetch-timeout 600000; \
+    npm config set fetch-retries 10; \
+    npm config set maxsockets 5; \
     sed -i 's|https://registry.npmjs.org/|https://registry.npmmirror.com/|g' package-lock.json; \
     rm -rf node_modules; \
-    npm ci --no-audit --no-fund; \
+    npm ci --no-audit --no-fund || (rm -rf node_modules && npm install --no-audit --no-fund); \
     node -p "'next ' + require('next/package.json').version"; \
     test -f node_modules/next/dist/bin/next
 

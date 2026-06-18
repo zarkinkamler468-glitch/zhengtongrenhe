@@ -2,7 +2,7 @@
 # 宝塔部署更新：解决 git pull 后页面 ChunkLoadError / 跳回旧版
 # 用法:
 #   bash deploy/baota-update.sh pm2    # PM2 部署（quick-install）
-#   bash deploy/baota-update.sh docker # Docker 部署
+#   bash deploy/baota-update.sh docker # Docker 部署（推荐：宿主机 npm + 轻量镜像）
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -13,24 +13,29 @@ echo "==> git pull"
 git pull
 
 if [ "$MODE" = "pm2" ]; then
-  echo "==> 重建前端 (PM2)"
-  cd frontend
-  if [ -f .env.production ]; then
-    echo "    使用 .env.production: $(cat .env.production)"
-  else
-    echo "    警告: 未找到 frontend/.env.production，请设置 NEXT_PUBLIC_API_URL"
-  fi
-  npm ci --registry=https://registry.npmmirror.com
-  rm -rf .next
-  npm run build
-  cd "$ROOT"
+  bash deploy/frontend-build.sh
   echo "==> 重启 PM2"
   pm2 restart edu-policy-api edu-policy-web
   pm2 save
 else
-  echo "==> 重建 web 容器（无缓存，避免旧 chunk）"
-  docker compose build --no-cache web
+  echo "==> 在宿主机构建前端（避免容器内 npm 超时）"
+  bash deploy/frontend-build.sh
+
+  echo "==> 打包 web 镜像（Dockerfile.prebuilt，不再容器内 npm ci）"
+  cd "$ROOT/frontend"
+  if [ -f .dockerignore ]; then
+    cp .dockerignore .dockerignore.bak
+  fi
+  cp .dockerignore.prebuilt .dockerignore
+
+  cd "$ROOT"
+  WEB_DOCKERFILE=Dockerfile.prebuilt docker compose build --no-cache web
   docker compose up -d web api celery-worker celery-beat
+
+  cd "$ROOT/frontend"
+  if [ -f .dockerignore.bak ]; then
+    mv .dockerignore.bak .dockerignore
+  fi
 fi
 
 echo ""
